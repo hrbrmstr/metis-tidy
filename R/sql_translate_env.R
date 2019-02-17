@@ -1,5 +1,9 @@
-#' @rdname Athena
-#' @keywords internal
+#' Convert R data type to Athena
+#'
+#' @rdname dbplyr-interface
+#' @param con Athena connection
+#' @param fields fields to type reference
+#' @param ... ignored
 #' @export
 db_data_type.AthenaConnection <- function(con, fields, ...) {
   print("\n\n\ndb_data_type\n\n\n")
@@ -21,8 +25,10 @@ db_data_type.AthenaConnection <- function(con, fields, ...) {
   vapply(fields, data_type, character(1))
 }
 
-#' @rdname Athena
-#' @keywords internal
+#' Translate R tridyverse functional idioms to Athena
+#'
+#' @rdname dbplyr-interface
+#' @param con Athena connection
 #' @export
 sql_translate_env.AthenaConnection <- function(con) {
 

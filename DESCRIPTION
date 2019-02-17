@@ -1,6 +1,6 @@
-Package: metis.lite
+Package: metis.tidy
 Type: Package
-Title: Access and Query Amazon Athena via DBI/JDBC
+Title: Access and Query Amazon Athena via the Tidyverse
 Version: 0.3.0
 Date: 2019-02-14
 Authors@R: c(
@@ -9,9 +9,8 @@ Authors@R: c(
   )
 Maintainer: Bob Rudis <bob@rud.is>
 Encoding: UTF-8
-Description: Methods are provides to connect to 'Amazon' 'Athena', lookup schemas/tables,
-    perform queries and retrieve query results. A lightweight 'RJDBC' implementation 
-    is included along with additional helpers for 'dplyr'/'dplyr' suppprt.
+Description: Methods are provided to use the 'metis' JDBC/DBI interface via
+    the Tidyverse (e.g. 'dbplyr'/'dplyr' idioms).
 SystemRequirements: JDK 1.8+
 License: MIT + file LICENSE
 Suggests:
@@ -19,11 +18,11 @@ Suggests:
     covr
 Depends:
     R (>= 3.2.0),
-    RJDBC
+    metis
 Imports:
-    rJava,
     DBI,
-    bit64,
-    dbplyr,
-    aws.signature
+    dplyr,
+    dbplyr
 RoxygenNote: 6.1.1
+Remotes:
+    hrbrmstr/metis

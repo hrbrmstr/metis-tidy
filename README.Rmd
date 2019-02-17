@@ -3,131 +3,85 @@ output: rmarkdown::github_document
 editor_options: 
   chunk_output_type: console
 ---
+```{r include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.retina = 2
+)
 
-# metis
+Sys.setenv(
+  AWS_S3_STAGING_DIR = "s3://aws-athena-query-results-569593279821-us-east-1"
+)
 
-Access and Query Amazon Athena via DBI/JDBC
+options(width=120)
+```
+
+# metis.tidy
+
+Access and Query Amazon Athena via the Tidyverse
 
 ## Description
 
-In Greek mythology, Metis was Athena's "helper" so methods are provided to help you accessing and querying Amazon Athena via DBI/JDBC and/or `dplyr`.
-#' Methods are provides to connect to 'Amazon' 'Athena', lookup schemas/tables,
+Methods are provided to use the 'metis' JDBC/DBI interface via the Tidyverse 
+(e.g. 'dbplyr'/'dplyr' idioms).
 
-## IMPORTANT
-
-Since R 3.5 (I don't remember this happening in R 3.4.x) signals sent from interrupting Athena JDBC calls crash the R interpreter. You need to set the `-Xrs` option to avoid signals being passed on to the JVM owner. That has to be done _before_ `rJava` is loaded so you either need to remember to put it at the top of all scripts _or_ stick this in your local `~/.Rprofile` and/or sitewide `Rprofile`:
-
-```r
-if (!grepl("-Xrs", getOption("java.parameters", ""))) {
-  options(
-    "java.parameters" = c(getOption("java.parameters", default = NULL), "-Xrs")
-  )
-}
-```
 ## What's Inside The Tin?
 
-The following functions are implemented:
-
-Easy-interface connection helper:
-
-- `athena_connect`	Simplified Athena JDBC connection helper
-
-Custom JDBC Classes:
-
-- `Athena`:	AthenaJDBC (make a new Athena con obj)
-- `AthenaConnection-class`:	AthenaJDBC
-- `AthenaDriver-class`:	AthenaJDBC
-- `AthenaResult-class`:	AthenaJDBC
-
-Custom JDBC Class Methods:
-
-- `dbConnect-method`
-- `dbExistsTable-method`
-- `dbGetQuery-method`
-- `dbListFields-method`
-- `dbListTables-method`
-- `dbReadTable-method`
-- `dbSendQuery-method`
-
-Pulled in from other `cloudyr` pkgs: 
-
-- `read_credentials`:	Use Credentials from .aws/credentials File
-- `use_credentials`:	Use Credentials from .aws/credentials File
+Lightweight helpers to make it easier to `filter` and `mutate` plus type support for Athena `BIGINT` (64-bit integers).
 
 ## Installation
 
 ```{r eval=FALSE}
-devtools::install_git("https://git.sr.ht/~hrbrmstr/metis-lite")
+devtools::install_git("https://git.sr.ht/~hrbrmstr/metis-tidy")
 # OR
-devtools::install_gitlab("hrbrmstr/metis-lite")
+devtools::install_gitlab("hrbrmstr/metis-tidy")
 # OR
-devtools::install_github("hrbrmstr/metis-lite")
-```
-
-```{r message=FALSE, warning=FALSE, include=FALSE}
-options(width=120)
+devtools::install_github("hrbrmstr/metis-tidy")
 ```
 
 ## Usage
 
-```{r message=FALSE, warning=FALSE}
-library(metis.lite)
+```{r}
+library(metis.tidy)
 
 # current verison
-packageVersion("metis.lite")
+packageVersion("metis.tidy")
 ```
 
-```{r message=FALSE, warning=FALSE}
-library(rJava)
-library(RJDBC)
-library(metis.lite)
-library(magrittr)
-library(dbplyr)
-library(dplyr)
-
-dbConnect(
-  drv = metis.lite::Athena(),
-  schema_name = "sampledb",
-  provider = "com.simba.athena.amazonaws.auth.PropertiesFileCredentialsProvider",
-  AwsCredentialsProviderArguments = path.expand("~/.aws/athenaCredentials.props"),
-  s3_staging_dir = "s3://aws-athena-query-results-569593279821-us-east-1",
-) -> con
-
-dbListTables(con, schema="sampledb")
-
-dbExistsTable(con, "elb_logs", schema="sampledb")
-
-dbListFields(con, "elb_logs", "sampledb")
-
-dbGetQuery(con, "SELECT * FROM sampledb.elb_logs LIMIT 10") %>% 
-  glimpse()
-```
-
-### Check types
+### Basic Setup (using an alternate provider)
 
 ```{r}
-dbGetQuery(con, "
-SELECT
-  CAST('chr' AS CHAR(4)) achar,
-  CAST('varchr' AS VARCHAR) avarchr,
-  CAST(SUBSTR(timestamp, 1, 10) AS DATE) AS tsday,
-  CAST(100.1 AS DOUBLE) AS justadbl,
-  CAST(127 AS TINYINT) AS asmallint,
-  CAST(100 AS INTEGER) AS justanint,
-  CAST(100000000000000000 AS BIGINT) AS abigint,
-  CAST(('GET' = 'GET') AS BOOLEAN) AS is_get,
-  ARRAY[1, 2, 3] AS arr1,
-  ARRAY['1', '2, 3', '4'] AS arr2,
-  MAP(ARRAY['foo', 'bar'], ARRAY[1, 2]) AS mp,
-  CAST(ROW(1, 2.0) AS ROW(x BIGINT, y DOUBLE)) AS rw,
-  CAST('{\"a\":1}' AS JSON) js
-FROM elb_logs
-LIMIT 1
-") %>% 
+library(metis.tidy)
+library(tidyverse)
+
+metis::dbConnect(
+  metis::Athena(),
+  Schema = "sampledb",
+  AwsCredentialsProviderClass = "com.simba.athena.amazonaws.auth.PropertiesFileCredentialsProvider",
+  AwsCredentialsProviderArguments = path.expand("~/.aws/athenaCredentials.props")
+) -> con
+
+elb_logs <- tbl(con, "elb_logs")
+
+glimpse(elb_logs)
+```
+
+#### Using custom Athena functions
+
+```{r}
+filter(elb_logs, elbresponsecode == "200") %>% 
+  mutate(
+    tsday = as.Date(substring(timestamp, 1L, 10L)),
+    host = url_extract_host(url),
+    proto_version = regexp_extract(protocol, "([[:digit:]\\.]+)"),
+  ) %>% 
+  select(tsday, host, receivedbytes, requestprocessingtime, proto_version) %>% 
   glimpse()
 ```
 
-#### dplyr
+#### All the types work. Some are useful.
 
 ```{r}
 tbl(con, sql("
@@ -151,6 +105,12 @@ LIMIT 1
   glimpse()
 ```
 
+```{r cloc}
+cloc::cloc_pkg_md()
+```
+
 ## Code of Conduct
 
-Please note that this project is released with a [Contributor Code of Conduct](CONDUCT.md). By participating in this project you agree to abide by its terms.
+Please note that this project is released with a 
+[Contributor Code of Conduct](CONDUCT.md). By participating in this project you 
+agree to abide by its terms.

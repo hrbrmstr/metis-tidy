@@ -1,184 +1,100 @@
 
-# metis
+# metis.tidy
 
-Access and Query Amazon Athena via DBI/JDBC
+Access and Query Amazon Athena via the Tidyverse
 
 ## Description
 
-In Greek mythology, Metis was Athena’s “helper” so methods are provided
-to help you accessing and querying Amazon Athena via DBI/JDBC and/or
-`dplyr`. \#’ Methods are provides to connect to ‘Amazon’ ‘Athena’,
-lookup schemas/tables,
-
-## IMPORTANT
-
-Since R 3.5 (I don’t remember this happening in R 3.4.x) signals sent
-from interrupting Athena JDBC calls crash the R interpreter. You need to
-set the `-Xrs` option to avoid signals being passed on to the JVM owner.
-That has to be done *before* `rJava` is loaded so you either need to
-remember to put it at the top of all scripts *or* stick this in your
-local `~/.Rprofile` and/or sitewide `Rprofile`:
-
-``` r
-if (!grepl("-Xrs", getOption("java.parameters", ""))) {
-  options(
-    "java.parameters" = c(getOption("java.parameters", default = NULL), "-Xrs")
-  )
-}
-```
+Methods are provided to use the ‘metis’ JDBC/DBI interface via the
+Tidyverse (e.g. ‘dbplyr’/‘dplyr’ idioms).
 
 ## What’s Inside The Tin?
 
-The following functions are implemented:
-
-Easy-interface connection helper:
-
-  - `athena_connect` Simplified Athena JDBC connection helper
-
-Custom JDBC Classes:
-
-  - `Athena`: AthenaJDBC (make a new Athena con obj)
-  - `AthenaConnection-class`: AthenaJDBC
-  - `AthenaDriver-class`: AthenaJDBC
-  - `AthenaResult-class`: AthenaJDBC
-
-Custom JDBC Class Methods:
-
-  - `dbConnect-method`
-  - `dbExistsTable-method`
-  - `dbGetQuery-method`
-  - `dbListFields-method`
-  - `dbListTables-method`
-  - `dbReadTable-method`
-  - `dbSendQuery-method`
-
-Pulled in from other `cloudyr` pkgs:
-
-  - `read_credentials`: Use Credentials from .aws/credentials File
-  - `use_credentials`: Use Credentials from .aws/credentials File
+Lightweight helpers to make it easier to `filter` and `mutate` plus type
+support for Athena `BIGINT` (64-bit integers).
 
 ## Installation
 
 ``` r
-devtools::install_git("https://git.sr.ht/~hrbrmstr/metis-lite")
+devtools::install_git("https://git.sr.ht/~hrbrmstr/metis-tidy")
 # OR
-devtools::install_gitlab("hrbrmstr/metis-lite")
+devtools::install_gitlab("hrbrmstr/metis-tidy")
 # OR
-devtools::install_github("hrbrmstr/metis-lite")
+devtools::install_github("hrbrmstr/metis-tidy")
 ```
 
 ## Usage
 
 ``` r
-library(metis.lite)
+library(metis.tidy)
 
 # current verison
-packageVersion("metis.lite")
+packageVersion("metis.tidy")
 ```
 
     ## [1] '0.3.0'
 
-``` r
-library(rJava)
-library(RJDBC)
-library(metis.lite)
-library(magrittr)
-library(dbplyr)
-library(dplyr)
+### Basic Setup (using an alternate provider)
 
-dbConnect(
-  drv = metis.lite::Athena(),
-  schema_name = "sampledb",
-  provider = "com.simba.athena.amazonaws.auth.PropertiesFileCredentialsProvider",
-  AwsCredentialsProviderArguments = path.expand("~/.aws/athenaCredentials.props"),
-  s3_staging_dir = "s3://aws-athena-query-results-569593279821-us-east-1",
+``` r
+library(metis.tidy)
+library(tidyverse)
+
+metis::dbConnect(
+  metis::Athena(),
+  Schema = "sampledb",
+  AwsCredentialsProviderClass = "com.simba.athena.amazonaws.auth.PropertiesFileCredentialsProvider",
+  AwsCredentialsProviderArguments = path.expand("~/.aws/athenaCredentials.props")
 ) -> con
 
-dbListTables(con, schema="sampledb")
+elb_logs <- tbl(con, "elb_logs")
+
+glimpse(elb_logs)
 ```
 
-    ## [1] "elb_logs"
-
-``` r
-dbExistsTable(con, "elb_logs", schema="sampledb")
-```
-
-    ## [1] TRUE
-
-``` r
-dbListFields(con, "elb_logs", "sampledb")
-```
-
-    ##  [1] "timestamp"             "elbname"               "requestip"             "requestport"          
-    ##  [5] "backendip"             "backendport"           "requestprocessingtime" "backendprocessingtime"
-    ##  [9] "clientresponsetime"    "elbresponsecode"       "backendresponsecode"   "receivedbytes"        
-    ## [13] "sentbytes"             "requestverb"           "url"                   "protocol"
-
-``` r
-dbGetQuery(con, "SELECT * FROM sampledb.elb_logs LIMIT 10") %>% 
-  glimpse()
-```
-
-    ## Observations: 10
+    ## Observations: ??
     ## Variables: 16
-    ## $ timestamp             <chr> "2014-09-29T18:18:51.826955Z", "2014-09-29T18:18:51.920462Z", "2014-09-29T18:18:52.2725…
+    ## Database: AthenaConnection
+    ## $ timestamp             <chr> "2014-09-26T22:00:22.979295Z", "2014-09-26T22:29:23.126181Z", "2014-09-26T22:29:28.5918…
     ## $ elbname               <chr> "lb-demo", "lb-demo", "lb-demo", "lb-demo", "lb-demo", "lb-demo", "lb-demo", "lb-demo",…
-    ## $ requestip             <chr> "255.48.150.122", "249.213.227.93", "245.108.120.229", "241.112.203.216", "241.43.107.2…
-    ## $ requestport           <int> 62096, 62096, 62096, 62096, 56454, 33254, 18918, 64352, 1651, 56454
-    ## $ backendip             <chr> "244.238.214.120", "248.99.214.228", "243.3.190.175", "246.235.181.255", "241.112.203.2…
-    ## $ backendport           <int> 8888, 8888, 8888, 8888, 8888, 8888, 8888, 8888, 8888, 8888
-    ## $ requestprocessingtime <dbl> 9.0e-05, 9.7e-05, 8.7e-05, 9.4e-05, 7.6e-05, 8.3e-05, 6.3e-05, 5.4e-05, 8.2e-05, 8.7e-05
-    ## $ backendprocessingtime <dbl> 0.007410, 0.256533, 0.442659, 0.016772, 0.035036, 0.029892, 0.034148, 0.014858, 0.01518…
-    ## $ clientresponsetime    <dbl> 0.000055, 0.000075, 0.000131, 0.000078, 0.000057, 0.000043, 0.000033, 0.000043, 0.00007…
-    ## $ elbresponsecode       <chr> "302", "302", "200", "200", "200", "200", "200", "200", "200", "200"
-    ## $ backendresponsecode   <chr> "200", "200", "200", "200", "200", "200", "200", "200", "200", "200"
-    ## $ receivedbytes         <S3: integer64> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-    ## $ sentbytes             <S3: integer64> 0, 0, 58402, 152213, 20766, 32370, 3408, 3884, 84245, 3831
-    ## $ requestverb           <chr> "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET"
-    ## $ url                   <chr> "http://www.abcxyz.com:80/", "http://www.abcxyz.com:80/accounts/login/?next=/", "http:/…
+    ## $ requestip             <chr> "247.43.35.131", "241.223.213.183", "253.116.237.195", "242.66.178.92", "255.185.7.21",…
+    ## $ requestport           <int> 37400, 45861, 37986, 57949, 62239, 9273, 17666, 62239, 62239, 62239, 15875, 37677, 2813…
+    ## $ backendip             <chr> "253.223.87.30", "252.173.201.86", "250.50.14.107", "247.172.229.147", "253.141.227.189…
+    ## $ backendport           <int> 80, 443, 8888, 8888, 8000, 8888, 8888, 8888, 8899, 8888, 8899, 8888, 8888, 8899, 8888, …
+    ## $ requestprocessingtime <dbl> 0.000092, 0.000074, 0.000076, 0.000102, 0.000067, 0.000051, 0.000057, 0.000079, 0.00009…
+    ## $ backendprocessingtime <dbl> 0.046512, 0.319001, 0.411608, 0.410884, 0.021358, 0.017171, 0.161456, 0.040714, 0.03277…
+    ## $ clientresponsetime    <dbl> 0.000068, 0.000074, 0.000070, 0.000068, 0.000040, 0.000032, 0.000042, 0.000044, 0.00004…
+    ## $ elbresponsecode       <chr> "200", "500", "500", "500", "200", "200", "500", "200", "200", "200", "200", "200", "20…
+    ## $ backendresponsecode   <chr> "200", "200", "404", "200", "200", "200", "404", "403", "200", "200", "200", "404", "50…
+    ## $ receivedbytes         <S3: integer64> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+    ## $ sentbytes             <S3: integer64> 2, 30256, 30256, 30256, 52442, 8194, 27952, 1888, 2, 70883, 40191, 1717, 614,…
+    ## $ requestverb           <chr> "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GET", "GE…
+    ## $ url                   <chr> "http://www.abcxyz.com:80/jobbrowser/?format=json&state=running&user=fmi7id4", "http://…
     ## $ protocol              <chr> "HTTP/1.1", "HTTP/1.1", "HTTP/1.1", "HTTP/1.1", "HTTP/1.1", "HTTP/1.1", "HTTP/1.1", "HT…
 
-### Check types
+#### Using custom Athena functions
 
 ``` r
-dbGetQuery(con, "
-SELECT
-  CAST('chr' AS CHAR(4)) achar,
-  CAST('varchr' AS VARCHAR) avarchr,
-  CAST(SUBSTR(timestamp, 1, 10) AS DATE) AS tsday,
-  CAST(100.1 AS DOUBLE) AS justadbl,
-  CAST(127 AS TINYINT) AS asmallint,
-  CAST(100 AS INTEGER) AS justanint,
-  CAST(100000000000000000 AS BIGINT) AS abigint,
-  CAST(('GET' = 'GET') AS BOOLEAN) AS is_get,
-  ARRAY[1, 2, 3] AS arr1,
-  ARRAY['1', '2, 3', '4'] AS arr2,
-  MAP(ARRAY['foo', 'bar'], ARRAY[1, 2]) AS mp,
-  CAST(ROW(1, 2.0) AS ROW(x BIGINT, y DOUBLE)) AS rw,
-  CAST('{\"a\":1}' AS JSON) js
-FROM elb_logs
-LIMIT 1
-") %>% 
+filter(elb_logs, elbresponsecode == "200") %>% 
+  mutate(
+    tsday = as.Date(substring(timestamp, 1L, 10L)),
+    host = url_extract_host(url),
+    proto_version = regexp_extract(protocol, "([[:digit:]\\.]+)"),
+  ) %>% 
+  select(tsday, host, receivedbytes, requestprocessingtime, proto_version) %>% 
   glimpse()
 ```
 
-    ## Observations: 1
-    ## Variables: 13
-    ## $ achar     <chr> "chr "
-    ## $ avarchr   <chr> "varchr"
-    ## $ tsday     <date> 2014-09-26
-    ## $ justadbl  <dbl> 100.1
-    ## $ asmallint <int> 127
-    ## $ justanint <int> 100
-    ## $ abigint   <S3: integer64> 100000000000000000
-    ## $ is_get    <lgl> TRUE
-    ## $ arr1      <chr> "1, 2, 3"
-    ## $ arr2      <chr> "1, 2, 3, 4"
-    ## $ mp        <chr> "{bar=2, foo=1}"
-    ## $ rw        <chr> "{x=1, y=2.0}"
-    ## $ js        <chr> "\"{\\\"a\\\":1}\""
+    ## Observations: ??
+    ## Variables: 5
+    ## Database: AthenaConnection
+    ## $ tsday                 <date> 2014-09-26, 2014-09-26, 2014-09-26, 2014-09-26, 2014-09-26, 2014-09-26, 2014-09-26, 20…
+    ## $ host                  <chr> "www.abcxyz.com", "www.abcxyz.com", "www.abcxyz.com", "www.abcxyz.com", "www.abcxyz.com…
+    ## $ receivedbytes         <S3: integer64> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+    ## $ requestprocessingtime <dbl> 0.000089, 0.000087, 0.000084, 0.000079, 0.000120, 0.000081, 0.000090, 0.000091, 0.00009…
+    ## $ proto_version         <chr> "1.1", "1.1", "1.1", "1.1", "1.1", "1.1", "1.1", "1.1", "1.1", "1.1", "1.1", "1.1", "1.…
 
-#### dplyr
+#### All the types work. Some are useful.
 
 ``` r
 tbl(con, sql("
@@ -207,7 +123,7 @@ LIMIT 1
     ## Database: AthenaConnection
     ## $ achar     <chr> "chr "
     ## $ avarchr   <chr> "varchr"
-    ## $ tsday     <date> 2014-09-27
+    ## $ tsday     <date> 2014-09-26
     ## $ justadbl  <dbl> 100.1
     ## $ asmallint <int> 127
     ## $ justanint <int> 100
@@ -218,6 +134,15 @@ LIMIT 1
     ## $ mp        <chr> "{bar=2, foo=1}"
     ## $ rw        <chr> "{x=1, y=2.0}"
     ## $ js        <chr> "\"{\\\"a\\\":1}\""
+
+``` r
+cloc::cloc_pkg_md()
+```
+
+| Lang | \# Files |  (%) | LoC |  (%) | Blank lines |  (%) | \# Lines |  (%) |
+| :--- | -------: | ---: | --: | ---: | ----------: | ---: | -------: | ---: |
+| R    |        6 | 0.86 | 131 | 0.71 |          13 | 0.34 |       27 | 0.42 |
+| Rmd  |        1 | 0.14 |  53 | 0.29 |          25 | 0.66 |       38 | 0.58 |
 
 ## Code of Conduct
 
