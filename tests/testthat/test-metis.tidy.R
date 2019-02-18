@@ -19,7 +19,7 @@ elb_logs <- tbl(con, "elb_logs")
 
 expect_is(elb_logs, "tbl_AthenaConnection")
 
-filter(elb_logs, elbresponsecode == "200") %>%
+filter(elb_logs, grepl("200", elbresponsecode)) %>%
   mutate(
     tsday = as.Date(substring(timestamp, 1L, 10L)),
     host = url_extract_host(url),
