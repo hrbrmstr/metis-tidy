@@ -28,7 +28,6 @@ db_data_type.AthenaConnection <- function(con, fields, ...) {
 #' Translate R tridyverse functional idioms to Athena
 #'
 #' @rdname dbplyr-interface
-#' @param con Athena connection
 #' @export
 sql_translate_env.AthenaConnection <- function(con) {
 
@@ -95,7 +94,6 @@ sql_translate_env.AthenaConnection <- function(con) {
       lpad = dbplyr::sql_prefix("LPAD", 2),
       lpad_with = dbplyr::sql_prefix("LPAD", 3),
       strpos = dbplyr::sql_prefix("STRPOS", 2),
-      substr = dbplyr::sql_prefix("SUBSTR", 3),
       trim = function(x, y, z) dbplyr::build_sql("TRIM(", x, " ", y, " FROM ", z, ")"),
       upper = dbplyr::sql_prefix("UPPER", 1),
       toupper = dbplyr::sql_prefix("UPPER", 1)

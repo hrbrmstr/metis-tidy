@@ -5,9 +5,9 @@
 \alias{sql_translate_env.AthenaConnection}
 \title{Convert R data type to Athena}
 \usage{
-db_data_type.AthenaConnection(con, fields, ...)
+\method{db_data_type}{AthenaConnection}(con, fields, ...)
 
-sql_translate_env.AthenaConnection(con)
+\method{sql_translate_env}{AthenaConnection}(con)
 }
 \arguments{
 \item{con}{Athena connection}
@@ -15,8 +15,6 @@ sql_translate_env.AthenaConnection(con)
 \item{fields}{fields to type reference}
 
 \item{...}{ignored}
-
-\item{con}{Athena connection}
 }
 \description{
 Convert R data type to Athena

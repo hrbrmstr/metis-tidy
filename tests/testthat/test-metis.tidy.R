@@ -1,6 +1,36 @@
-context("basic functionality")
-test_that("we can do something", {
+context("d[b]plyr ops work as expected")
 
-  #expect_that(some_function(), is_a("data.frame"))
+Sys.setenv(
+  AWS_S3_STAGING_DIR = "s3://aws-athena-query-results-569593279821-us-east-1"
+)
 
-})
+library(metis)
+library(dbplyr)
+library(dplyr)
+
+metis::dbConnect(
+  metis::Athena(),
+  Schema = "sampledb",
+  AwsCredentialsProviderClass = "com.simba.athena.amazonaws.auth.PropertiesFileCredentialsProvider",
+  AwsCredentialsProviderArguments = path.expand("~/.aws/athenaCredentials.props")
+) -> con
+
+elb_logs <- tbl(con, "elb_logs")
+
+expect_is(elb_logs, "tbl_AthenaConnection")
+
+filter(elb_logs, elbresponsecode == "200") %>%
+  mutate(
+    tsday = as.Date(substring(timestamp, 1L, 10L)),
+    host = url_extract_host(url),
+    proto_version = regexp_extract(protocol, "([[:digit:]\\.]+)"),
+  ) %>%
+  select(tsday, host, receivedbytes, requestprocessingtime, proto_version) %>%
+  head(1) %>%
+  collect() -> out
+
+expect_is(out$tsday, "Date")
+expect_is(out$host, "character")
+expect_is(out$receivedbytes, "integer64")
+expect_is(out$requestprocessingtime, "numeric")
+expect_is(out$proto_version, "character")
