@@ -9,7 +9,7 @@
 #' @keywords internal
 #' @docType package
 #' @author Bob Rudis (bob@@rud.is)
-#' @import metis DBI dbplyr
+#' @import metis.jars metis DBI dbplyr
 #' @importFrom dplyr tbl db_data_type sql_translate_env
 #' @references [Simba Athena JDBC Driver with SQL Connector Installation and Configuration Guide](https://s3.amazonaws.com/athena-downloads/drivers/JDBC/SimbaAthenaJDBC_2.0.6/docs/Simba+Athena+JDBC+Driver+Install+and+Configuration+Guide.pdf)
 NULL

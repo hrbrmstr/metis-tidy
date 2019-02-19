@@ -27,7 +27,7 @@ db_data_type.AthenaConnection <- function(con, fields, ...) {
 
 #' Translate R tridyverse functional idioms to Athena
 #'
-#' @rdname dbplyr-interface
+#' @param con AthenaConnection
 #' @export
 sql_translate_env.AthenaConnection <- function(con) {
 

@@ -2,12 +2,9 @@
 % Please edit documentation in R/sql_translate_env.R
 \name{db_data_type.AthenaConnection}
 \alias{db_data_type.AthenaConnection}
-\alias{sql_translate_env.AthenaConnection}
 \title{Convert R data type to Athena}
 \usage{
 \method{db_data_type}{AthenaConnection}(con, fields, ...)
-
-\method{sql_translate_env}{AthenaConnection}(con)
 }
 \arguments{
 \item{con}{Athena connection}
@@ -18,6 +15,4 @@
 }
 \description{
 Convert R data type to Athena
-
-Translate R tridyverse functional idioms to Athena
 }

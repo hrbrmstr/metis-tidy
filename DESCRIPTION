@@ -14,13 +14,16 @@ Description: Methods are provided to use the 'metis' JDBC/DBI interface via
 SystemRequirements: JDK 1.8+
 License: MIT + file LICENSE
 Suggests:
-    testthat,
-    covr
+    covr,
+    testthat
 Depends:
     R (>= 3.2.0),
-    metis
 Imports:
     DBI,
+    RJDBC,
+    rJava,
+    metis.jars,
+    metis,
     dplyr,
     dbplyr
 RoxygenNote: 6.1.1
