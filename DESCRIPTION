@@ -28,4 +28,5 @@ Imports:
     dbplyr
 RoxygenNote: 6.1.1
 Remotes:
+    hrbrmstr/metis-jars,
     hrbrmstr/metis
