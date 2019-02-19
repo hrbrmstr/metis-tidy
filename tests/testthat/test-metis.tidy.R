@@ -17,7 +17,7 @@ if (identical(Sys.getenv("TRAVIS"), "true")) {
   metis::dbConnect(
     drv = drv,
     Schema = "sampledb",
-    S3OutputLocation = "s3://aws-athena-query-results-569593279821-us-east-1",
+    S3OutputLocation = "s3://aws-athena-query-results-569593279821-us-east-1"
   ) -> con
 
 } else {
