@@ -1,3 +1,6 @@
+[![Travis-CI Build Status](https://travis-ci.org/hrbrmstr/metis-tidy.svg?branch=master)](https://travis-ci.org/hrbrmstr/metis-tidy) 
+[![Coverage Status](https://codecov.io/gh/hrbrmstr/metis-tidy/branch/master/graph/badge.svg)](https://codecov.io/gh/hrbrmstr/metis-tidy
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/metis.tidy)](https://cran.r-project.org/package=metis.tidy)
 
 # metis.tidy
 
